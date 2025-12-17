@@ -30,13 +30,14 @@ jobs:
       - name: Extract Version Name
         id: extract_version
         run: |
-          VERSION_NAME=$(grep "versionName" app/build.gradle.kts | sed -n 's/.*versionName ["'\'']\(.*\)["'\'']/\1/p')
-          # 去除可能存在的首尾空格
-          VERSION_NAME=$(echo "$VERSION_NAME" | xargs)
+          VERSION_NAME=$(grep 'versionName =' app/build.gradle.kts | awk -F'"' '{print $2}')
+          
+          # 简单校验一下是否为空
           if [ -z "$VERSION_NAME" ]; then
-            echo "错误: 未能提取到版本号，请检查 build.gradle.kts 写法"
+            echo "错误: 未能提取到版本号，请检查 app/build.gradle.kts 路径是否正确"
             exit 1
           fi
+
           echo "提取到的版本号: $VERSION_NAME"
           echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_OUTPUT
 
