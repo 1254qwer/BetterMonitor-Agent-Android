@@ -26,15 +26,15 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # 4. 提取版本号 (从 app/build.gradle 中获取)
+      # 4. 提取版本号 (从 app/build.gradle.kts 中获取)
       - name: Extract Version Name
         id: extract_version
         run: |
-          VERSION_NAME=$(grep "versionName" app/build.gradle | sed -n 's/.*versionName ["'\'']\(.*\)["'\'']/\1/p')
+          VERSION_NAME=$(grep "versionName" app/build.gradle.kts | sed -n 's/.*versionName ["'\'']\(.*\)["'\'']/\1/p')
           # 去除可能存在的首尾空格
           VERSION_NAME=$(echo "$VERSION_NAME" | xargs)
           if [ -z "$VERSION_NAME" ]; then
-            echo "错误: 未能提取到版本号，请检查 build.gradle 写法"
+            echo "错误: 未能提取到版本号，请检查 build.gradle.kts 写法"
             exit 1
           fi
           echo "提取到的版本号: $VERSION_NAME"
