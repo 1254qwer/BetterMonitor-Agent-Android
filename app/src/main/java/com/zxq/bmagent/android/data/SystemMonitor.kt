@@ -79,6 +79,7 @@ class SystemMonitor(private val context: Context) {
         val memoryInfo = getMemoryInfo()
         val diskInfo = getDiskInfo()
         val networkStats = getNetworkStats()
+        val loadAvg = getLoadAverage()
 
         return MonitorPayload(
                 cpuUsage = getCpuUsage(),
@@ -90,8 +91,54 @@ class SystemMonitor(private val context: Context) {
                 networkOut = networkStats.txRate,
                 bootTime = (System.currentTimeMillis() - SystemClock.elapsedRealtime()) / 1000,
                 latency = 0.0, // Ping not implemented yet
-                packetLoss = 0.0
+                packetLoss = 0.0,
+                loadAvg1 = loadAvg.first,
+                loadAvg5 = loadAvg.second,
+                loadAvg15 = loadAvg.third
         )
+    }
+
+    private fun getLoadAverage(): Triple<Double, Double, Double> {
+        var line: String? = null
+
+        // Strategy 1: Direct File Read
+        try {
+            val reader = RandomAccessFile("/proc/loadavg", "r")
+            line = reader.readLine()
+            reader.close()
+        } catch (e: Exception) {
+            // Strategy 2: Root Fallback
+            if (FileManager.isRootAvailable) {
+                try {
+                    val process =
+                            Runtime.getRuntime().exec(arrayOf("su", "-c", "cat /proc/loadavg"))
+                    val bufferedReader = process.inputStream.bufferedReader()
+                    line = bufferedReader.readLine()
+                    bufferedReader.close()
+                    process.waitFor()
+                } catch (e2: Exception) {
+                    // Fail cleanly
+                }
+            }
+        }
+
+        if (line != null) {
+            try {
+                // /proc/loadavg format: 0.00 0.00 0.00 1/123 12345
+                val parts = line.split("\\s+".toRegex())
+                if (parts.size >= 3) {
+                    return Triple(
+                            parts[0].toDoubleOrNull() ?: 0.0,
+                            parts[1].toDoubleOrNull() ?: 0.0,
+                            parts[2].toDoubleOrNull() ?: 0.0
+                    )
+                }
+            } catch (e: Exception) {
+                // Parse error
+            }
+        }
+
+        return Triple(0.0, 0.0, 0.0)
     }
 
     private fun getMemoryInfo(): ActivityManager.MemoryInfo {
@@ -117,9 +164,12 @@ class SystemMonitor(private val context: Context) {
                 val enumIpAddr = intf.inetAddresses
                 while (enumIpAddr.hasMoreElements()) {
                     val inetAddress = enumIpAddr.nextElement()
-                    if (!inetAddress.isLoopbackAddress && inetAddress.hostAddress.indexOf(':') < 0
+                    val hostAddress = inetAddress.hostAddress
+                    if (!inetAddress.isLoopbackAddress &&
+                                    hostAddress != null &&
+                                    hostAddress.indexOf(':') < 0
                     ) {
-                        return inetAddress.hostAddress
+                        return hostAddress
                     }
                 }
             }
@@ -131,13 +181,50 @@ class SystemMonitor(private val context: Context) {
     private var lastCpuTotal: Long = 0
     private var lastCpuIdle: Long = 0
 
+    // App CPU Fallback
+    private var lastAppCpuTime: Long = 0
+    private var lastAppRealTime: Long = 0
+
     private fun getCpuUsage(): Double {
+        // Strategy 1: Root / System Access (Global CPU)
+        if (FileManager.isRootAvailable) {
+            try {
+                // Use su to read /proc/stat
+                val process = Runtime.getRuntime().exec(arrayOf("su", "-c", "cat /proc/stat"))
+                val reader = process.inputStream.bufferedReader()
+                val line = reader.readLine()
+                reader.close()
+                process.waitFor()
+
+                if (line != null && line.startsWith("cpu")) {
+                    return parseProcStat(line)
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("SystemMonitor", "Root CPU check failed", e)
+            }
+        }
+
+        // Strategy 2: Legacy File Access (Global CPU - Old Android)
         try {
             val reader = RandomAccessFile("/proc/stat", "r")
-            val load = reader.readLine()
+            val line = reader.readLine()
             reader.close()
 
-            val toks = load.split(" +".toRegex())
+            if (line != null && line.startsWith("cpu")) {
+                return parseProcStat(line)
+            }
+        } catch (e: Exception) {
+            // Permission denied or file not found - expected on Android 8+
+        }
+
+        // Strategy 3: App Process Fallback (App CPU only)
+        // Return (AppCpuTime / (TotalTime * NumCores)) * 100
+        return getAppCpuUsage()
+    }
+
+    private fun parseProcStat(line: String): Double {
+        try {
+            val toks = line.split(" +".toRegex())
             // /proc/stat: cpu user nice system idle iowait irq softirq ...
             // toks[0] is "cpu"
             val idle = toks[4].toLong()
@@ -154,6 +241,30 @@ class SystemMonitor(private val context: Context) {
         } catch (e: Exception) {
             return 0.0
         }
+    }
+
+    private fun getAppCpuUsage(): Double {
+        val now = SystemClock.elapsedRealtime()
+        val appCpu = android.os.Process.getElapsedCpuTime() // ms
+
+        if (lastAppRealTime == 0L) {
+            lastAppRealTime = now
+            lastAppCpuTime = appCpu
+            return 0.0
+        }
+
+        val diffTime = now - lastAppRealTime
+        val diffCpu = appCpu - lastAppCpuTime
+
+        if (diffTime <= 0) return 0.0
+
+        lastAppRealTime = now
+        lastAppCpuTime = appCpu
+
+        val numCores = Runtime.getRuntime().availableProcessors()
+        // Usage = (CpuTimeDelta / (WallClockDelta * Cores)) * 100
+        val usage = (diffCpu.toDouble() / (diffTime.toDouble() * numCores)) * 100.0
+        return usage.coerceIn(0.0, 100.0)
     }
 
     // Network Usage Logic
