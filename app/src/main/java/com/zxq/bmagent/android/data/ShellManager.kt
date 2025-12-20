@@ -139,16 +139,12 @@ object ShellManager {
         webSocketClient.send(gson.toJson(echoMsg))
     }
 
-    fun resize(sessionId: String, cols: Int, rows: Int) {
-        // Not supported without PTY
-    }
-
     fun closeSession(sessionId: String, webSocketClient: WebSocketClient) {
         val session = sessions.remove(sessionId)
         if (session != null) {
             try {
                 session.process.destroy()
-            } catch (e: Exception) {}
+            } catch (_: Exception) {}
 
             val msg = ShellCloseMessage(session = sessionId, message = "Session closed")
             webSocketClient.send(gson.toJson(msg))

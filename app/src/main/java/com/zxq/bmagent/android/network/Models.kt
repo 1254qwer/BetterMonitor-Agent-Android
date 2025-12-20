@@ -137,7 +137,7 @@ data class ShellCommandMessage(
 )
 
 data class ShellPayload(
-        val type: String, // create, input, resize, close
+        val type: String, // create, input, close
         val session: String,
         val data: String? = null
 )

@@ -17,14 +17,14 @@ object FileManager {
         return try {
             val process = Runtime.getRuntime().exec(arrayOf("su", "-c", "id"))
             process.waitFor() == 0
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             false
         }
     }
 
     private fun resolvePath(path: String): String {
         val root = isRootAvailable
-        if (root) return if (path.isEmpty()) "/" else path
+        if (root) return path.ifEmpty { "/" }
 
         val externalStorage = Environment.getExternalStorageDirectory().absolutePath
         val resolved =
@@ -35,7 +35,7 @@ object FileManager {
                 } else if (path.startsWith("/")) {
                     externalStorage + path
                 } else {
-                    externalStorage + "/" + path
+                    "$externalStorage/$path"
                 }
         android.util.Log.d("FileManager", "Resolving path: '$path' -> '$resolved' (Root: $root)")
         return resolved
@@ -121,12 +121,12 @@ object FileManager {
                                 )
                         )
                     }
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     continue
                 }
             }
             return items.sortedWith(compareBy({ !it.is_dir }, { it.name.lowercase() }))
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             return emptyList()
         }
     }

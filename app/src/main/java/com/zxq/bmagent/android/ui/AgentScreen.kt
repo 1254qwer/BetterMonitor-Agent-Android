@@ -1,7 +1,6 @@
 package com.zxq.bmagent.android.ui
 
 import android.content.Intent
-import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -109,11 +108,7 @@ fun AgentScreen(repository: AgentRepository, modifier: Modifier = Modifier) {
                             context.startForegroundService(intent)
                         } else {
                             intent.action = AgentService.ACTION_START
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                context.startForegroundService(intent)
-                            } else {
-                                context.startService(intent)
-                            }
+                            context.startForegroundService(intent)
                         }
                     },
                     colors =

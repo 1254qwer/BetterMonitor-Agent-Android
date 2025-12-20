@@ -26,7 +26,7 @@ object ProcessManager {
             val reader = BufferedReader(InputStreamReader(process.inputStream))
 
             // Consume header
-            val header = reader.readLine() // e.g., "USER PID PPID VSZ RSS S NAME"
+            reader.readLine() // e.g., "USER PID PPID VSZ RSS S NAME"
 
             var line: String?
             while (reader.readLine().also { line = it } != null) {
@@ -74,7 +74,7 @@ object ProcessManager {
             val user = parts[0]
             val pid = parts[1].toIntOrNull() ?: return null
             val ppid = parts[2].toIntOrNull() ?: 0
-            val vsz = parts[3].toLongOrNull() ?: 0L // VSZ is usually in K
+            parts[3].toLongOrNull() ?: 0L // VSZ is usually in K
             val rss = parts[4].toLongOrNull() ?: 0L // RSS is usually in K
             val status = parts[5]
             val name = parts.subList(6, parts.size).joinToString(" ")
@@ -89,7 +89,7 @@ object ProcessManager {
                     status = mapStatus(status),
                     cmdline = name
             )
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             return null
         }
     }
@@ -128,7 +128,7 @@ object ProcessManager {
                     status = "Running",
                     cmdline = name
             )
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             return null
         }
     }
@@ -160,11 +160,11 @@ object ProcessManager {
         return try {
             android.os.Process.killProcess(pid)
             true
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             // Try shell kill just in case it is own user
             try {
                 Runtime.getRuntime().exec("kill -9 $pid").waitFor() == 0
-            } catch (e2: Exception) {
+            } catch (_: Exception) {
                 false
             }
         }

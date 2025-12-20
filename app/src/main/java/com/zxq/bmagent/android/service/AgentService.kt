@@ -5,7 +5,6 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
-import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
@@ -147,7 +146,7 @@ class AgentService : LifecycleService() {
                         val initialMsg =
                                 HeartbeatMessage(timestamp = System.currentTimeMillis() / 1000)
                         wsClient.send(gson.toJson(initialMsg))
-                    } catch (e: Exception) {}
+                    } catch (_: Exception) {}
 
                     while (true) {
                         delay(10000)
@@ -192,16 +191,14 @@ class AgentService : LifecycleService() {
     }
 
     private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val serviceChannel =
-                    NotificationChannel(
-                            CHANNEL_ID,
-                            "Agent Service Channel",
-                            NotificationManager.IMPORTANCE_DEFAULT
-                    )
-            val manager = getSystemService(NotificationManager::class.java)
-            manager.createNotificationChannel(serviceChannel)
-        }
+        val serviceChannel =
+                NotificationChannel(
+                        CHANNEL_ID,
+                        "Agent Service Channel",
+                        NotificationManager.IMPORTANCE_DEFAULT
+                )
+        val manager = getSystemService(NotificationManager::class.java)
+        manager.createNotificationChannel(serviceChannel)
     }
 
     private fun createNotification(title: String, content: String): Notification {

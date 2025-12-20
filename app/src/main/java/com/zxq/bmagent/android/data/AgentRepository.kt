@@ -4,31 +4,27 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
 import java.util.LinkedList
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import androidx.core.content.edit
 
-class AgentRepository(private val context: Context) {
+class AgentRepository(context: Context) {
 
     private val prefs: SharedPreferences =
             context.getSharedPreferences("agent_prefs", Context.MODE_PRIVATE)
 
-    private var process: Process? = null
-    private val scope = CoroutineScope(Dispatchers.IO)
-
     // Configuration
     var serverId: String
         get() = prefs.getString("server_id", "") ?: ""
-        set(value) = prefs.edit().putString("server_id", value).apply()
+        set(value) = prefs.edit { putString("server_id", value) }
 
     var serverKey: String
         get() = prefs.getString("server_key", "") ?: ""
-        set(value) = prefs.edit().putString("server_key", value).apply()
+        set(value) = prefs.edit { putString("server_key", value)}
 
     var serverUrl: String
         get() = prefs.getString("server_url", "") ?: ""
-        set(value) = prefs.edit().putString("server_url", value).apply()
+        set(value) = prefs.edit { putString("server_url", value)}
 
     // Logs
     private val _logs = MutableStateFlow<List<String>>(emptyList())
@@ -49,10 +45,6 @@ class AgentRepository(private val context: Context) {
 
     fun setConnected(connected: Boolean) {
         _isConnected.value = connected
-    }
-
-    init {
-        // No binary needed for native implementation
     }
 
     // Deprecated: startAgent is now managed by AgentService directly calling WebSocketClient

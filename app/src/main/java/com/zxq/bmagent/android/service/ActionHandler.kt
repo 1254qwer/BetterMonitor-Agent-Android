@@ -203,10 +203,6 @@ class ActionHandler(
             when (payload.type) {
                 "create" -> ShellManager.createSession(payload.session, webSocketClient)
                 "input" -> ShellManager.input(payload.session, payload.data ?: "", webSocketClient)
-                "resize" -> {
-                    // Parse data if needed: {"cols": 80, "rows": 24}
-                    // ShellManager.resize(payload.session, cols, rows)
-                }
                 "close" -> ShellManager.closeSession(payload.session, webSocketClient)
             }
         } catch (e: Exception) {

@@ -29,12 +29,12 @@ object ServiceLocator {
                 }
     }
 
-    @Volatile private var webSocketClient: com.zxq.bmagent.android.network.WebSocketClient? = null
+    @Volatile private var webSocketClient: WebSocketClient? = null
 
-    fun provideWebSocketClient(): com.zxq.bmagent.android.network.WebSocketClient {
+    fun provideWebSocketClient(): WebSocketClient {
         return webSocketClient
                 ?: synchronized(this) {
-                    val instance = com.zxq.bmagent.android.network.WebSocketClient()
+                    val instance = WebSocketClient()
                     webSocketClient = instance
                     instance
                 }
@@ -42,14 +42,14 @@ object ServiceLocator {
 
     @SuppressLint("StaticFieldLeak")
     @Volatile
-    private var actionHandler: com.zxq.bmagent.android.service.ActionHandler? = null
+    private var actionHandler: ActionHandler? = null
 
-    fun provideActionHandler(context: Context): com.zxq.bmagent.android.service.ActionHandler {
+    fun provideActionHandler(context: Context): ActionHandler {
         return actionHandler
                 ?: synchronized(this) {
                     val repo = provideAgentRepository(context)
                     val client = provideWebSocketClient()
-                    val instance = com.zxq.bmagent.android.service.ActionHandler(repo, client)
+                    val instance = ActionHandler(repo, client)
                     actionHandler = instance
                     instance
                 }

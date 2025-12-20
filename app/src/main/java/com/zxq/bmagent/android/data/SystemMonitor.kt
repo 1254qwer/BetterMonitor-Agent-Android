@@ -49,9 +49,9 @@ class SystemMonitor(private val context: Context) {
                 val request4 = okhttp3.Request.Builder().url("https://4.ipw.cn").build()
                 val response4 = client.newCall(request4).execute()
                 if (response4.isSuccessful) {
-                    response4.body?.string()?.trim()?.let { if (it.isNotEmpty()) ips.add(it) }
+                    response4.body.string().trim().let { if (it.isNotEmpty()) ips.add(it) }
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 // Ignore
             }
 
@@ -60,9 +60,9 @@ class SystemMonitor(private val context: Context) {
                 val request6 = okhttp3.Request.Builder().url("https://6.ipw.cn").build()
                 val response6 = client.newCall(request6).execute()
                 if (response6.isSuccessful) {
-                    response6.body?.string()?.trim()?.let { if (it.isNotEmpty()) ips.add(it) }
+                    response6.body.string().trim().let { if (it.isNotEmpty()) ips.add(it) }
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 // Ignore
             }
 
@@ -106,7 +106,7 @@ class SystemMonitor(private val context: Context) {
             val reader = RandomAccessFile("/proc/loadavg", "r")
             line = reader.readLine()
             reader.close()
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             // Strategy 2: Root Fallback
             if (FileManager.isRootAvailable) {
                 try {
@@ -116,7 +116,7 @@ class SystemMonitor(private val context: Context) {
                     line = bufferedReader.readLine()
                     bufferedReader.close()
                     process.waitFor()
-                } catch (e2: Exception) {
+                } catch (_: Exception) {
                     // Fail cleanly
                 }
             }
@@ -133,7 +133,7 @@ class SystemMonitor(private val context: Context) {
                             parts[2].toDoubleOrNull() ?: 0.0
                     )
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 // Parse error
             }
         }
@@ -173,7 +173,7 @@ class SystemMonitor(private val context: Context) {
                     }
                 }
             }
-        } catch (ex: Exception) {}
+        } catch (_: Exception) {}
         return "127.0.0.1"
     }
 
@@ -213,7 +213,7 @@ class SystemMonitor(private val context: Context) {
             if (line != null && line.startsWith("cpu")) {
                 return parseProcStat(line)
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             // Permission denied or file not found - expected on Android 8+
         }
 
@@ -238,7 +238,7 @@ class SystemMonitor(private val context: Context) {
 
             if (diffTotal == 0L) return 0.0
             return ((diffTotal - diffIdle) * 100.0) / diffTotal
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             return 0.0
         }
     }
